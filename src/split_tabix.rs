@@ -1,5 +1,6 @@
 use csv::Writer;
 use flate2::{bufread, write, Compression};
+use niffler::{compression, Error};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -30,26 +31,26 @@ impl BarcodeStats {
     }
 }
 
-fn get_reader_handle(path: &str) -> Box<dyn io::Read> {
-    if path.ends_with(".gz") {
-        let f = File::open(path).unwrap();
-        Box::new(bufread::GzDecoder::new(io::BufReader::new(f)))
-    } else {
-        Box::new(File::open(path).unwrap())
-    }
-}
+// fn get_reader_handle(path: &str) -> Box<dyn io::Read> {
+//     if path.ends_with(".gz") {
+//         let f = File::open(path).unwrap();
+//         Box::new(bufread::GzDecoder::new(io::BufReader::new(f)))
+//     } else {
+//         Box::new(File::open(path).unwrap())
+//     }
+// }
 
-fn get_writer_handle(path: &str) -> Box<dyn io::Write> {
-    let f = File::create(path).expect("Cannot open output file");
-    if path.ends_with(".gz") {
-        Box::new(io::BufWriter::new(write::GzEncoder::new(
-            f,
-            Compression::default(),
-        )))
-    } else {
-        Box::new(io::BufWriter::new(f))
-    }
-}
+// fn get_writer_handle(path: &str) -> Box<dyn io::Write> {
+//     let f = File::create(path).expect("Cannot open output file");
+//     if path.ends_with(".gz") {
+//         Box::new(io::BufWriter::new(write::GzEncoder::new(
+//             f,
+//             Compression::default(),
+//         )))
+//     } else {
+//         Box::new(io::BufWriter::new(f))
+//     }
+// }
 
 pub fn split_tabix_by_barcode(
     filename: &str,
@@ -59,12 +60,21 @@ pub fn split_tabix_by_barcode(
         .delimiter(b'\t')
         .has_headers(false)
         .comment(Some(b'#'))
-        .from_reader(get_reader_handle(&filename));
+        .from_reader(
+            niffler::from_path(&filename)
+                .expect("Error opening fragments file")
+                .0,
+        );
 
     let mut writers: HashMap<String, Writer<Box<dyn std::io::Write>>> = barcodes
         .keys()
         .map(|name| format!("{}.tsv", name))
-        .map(|filename| csv::Writer::from_writer(get_writer_handle(&filename)))
+        .map(|filename| {
+            csv::Writer::from_writer(
+                niffler::to_path(&filename, compression::Format::Gzip, niffler::Level::Nine)
+                    .expect("Error opening output"),
+            )
+        })
         .zip(barcodes.keys())
         .fold(HashMap::new(), |mut acc, (handle, name)| {
             acc.entry(name.to_string()).or_insert(handle);
