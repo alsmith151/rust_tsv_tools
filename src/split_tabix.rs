@@ -68,10 +68,10 @@ pub fn split_tabix_by_barcode(
 
     let mut writers: HashMap<String, Writer<Box<dyn std::io::Write>>> = barcodes
         .keys()
-        .map(|name| format!("{}.tsv", name))
+        .map(|name| format!("{}.tsv.gz", name))
         .map(|filename| {
             csv::Writer::from_writer(
-                niffler::to_path(&filename, compression::Format::Gzip, niffler::Level::Nine)
+                niffler::to_path(&filename, compression::Format::Gzip, niffler::Level::Five)
                     .expect("Error opening output"),
             )
         })
