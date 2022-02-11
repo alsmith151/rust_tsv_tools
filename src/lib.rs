@@ -45,6 +45,6 @@ fn split_tabix_by_fragment_length_py(
 #[pymodule]
 fn rust_tsv_tools(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(split_tabix_by_barcode_py, m)?)?;
-    m.add_function(wrap_pyfunction!(split_tabix_by_fragemnt_length_py, m)?)?;
+    m.add_function(wrap_pyfunction!(split_tabix_by_fragment_length_py, m)?)?;
     Ok(())
 }
