@@ -16,6 +16,7 @@ tempfile = "*"
 rayon = "*"
 simplelog = "*"
 ctrlc = "*"
+niffler = "*"
 
 [dependencies.pyo3]
 version = "*"
