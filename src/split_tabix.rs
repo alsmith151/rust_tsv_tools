@@ -1,10 +1,10 @@
+use csv::Writer;
 use flate2::{bufread, write, Compression};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io;
-use csv::Writer;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 struct TabixRecord {
@@ -18,17 +18,17 @@ struct TabixRecord {
 #[derive(Debug)]
 pub struct BarcodeStats {
     fragments_total: u64,
-    fragments_written: HashMap<String, u64>
-    
+    fragments_written: HashMap<String, u64>,
 }
 
-impl BarcodeStats{
-    pub fn new() -> BarcodeStats{
-        BarcodeStats{fragments_total:0, fragments_written:HashMap::new()}
+impl BarcodeStats {
+    pub fn new() -> BarcodeStats {
+        BarcodeStats {
+            fragments_total: 0,
+            fragments_written: HashMap::new(),
+        }
     }
-
 }
-
 
 fn get_reader_handle(path: &str) -> Box<dyn io::Read> {
     if path.ends_with(".gz") {
@@ -55,7 +55,6 @@ pub fn split_tabix_by_barcode(
     filename: &str,
     barcodes: &HashMap<String, HashSet<String>>,
 ) -> Result<BarcodeStats, std::io::Error> {
-    
     let mut reader = csv::ReaderBuilder::new()
         .delimiter(b'\t')
         .has_headers(false)
@@ -67,25 +66,31 @@ pub fn split_tabix_by_barcode(
         .map(|name| format!("{}.tsv", name))
         .map(|filename| csv::Writer::from_writer(get_writer_handle(&filename)))
         .zip(barcodes.keys())
-        .fold(HashMap::new(), |mut acc, (handle, name)|{
+        .fold(HashMap::new(), |mut acc, (handle, name)| {
             acc.entry(name.to_string()).or_insert(handle);
             acc
         });
 
     let mut stats = BarcodeStats::new();
-    
 
     for (ii, result) in reader.records().enumerate() {
         let record: TabixRecord = result.expect("Error reading record").deserialize(None)?;
         let bc = &record.barcode;
         stats.fragments_total += 1;
 
-        for (barcodes_name, barcode_set) in barcodes{
-            let mut writer =  writers.get_mut(barcodes_name).unwrap();
-            writer.serialize(&record).expect(&format!("Failed to write record number: {}", ii));
-            stats.fragments_written.entry(barcodes_name.to_string()).and_modify(|e| *e += 1).or_insert(1);
+        for (barcodes_name, barcode_set) in barcodes {
+            if barcode_set.contains(bc) {
+                let writer = writers.get_mut(barcodes_name).unwrap();
+                writer
+                    .serialize(&record)
+                    .expect(&format!("Failed to write record number: {}", ii));
+                stats
+                    .fragments_written
+                    .entry(barcodes_name.to_string())
+                    .and_modify(|e| *e += 1)
+                    .or_insert(1);
+            }
         }
-        
     }
 
     Ok(stats)
