@@ -74,22 +74,26 @@ pub fn split_tabix_by_barcode(
     let mut stats = BarcodeStats::new();
 
     for (ii, result) in reader.records().enumerate() {
-        let record: TabixRecord = result.expect("Error reading record").deserialize(None)?;
-        let bc = &record.barcode;
         stats.fragments_total += 1;
 
-        for (barcodes_name, barcode_set) in barcodes {
-            if barcode_set.contains(bc) {
-                let writer = writers.get_mut(barcodes_name).unwrap();
-                writer
-                    .serialize(&record)
-                    .expect(&format!("Failed to write record number: {}", ii));
-                stats
-                    .fragments_written
-                    .entry(barcodes_name.to_string())
-                    .and_modify(|e| *e += 1)
-                    .or_insert(1);
+        match result {
+            Ok(r) => {
+                let record: TabixRecord = r.deserialize(None).unwrap();
+                for (barcodes_name, barcode_set) in barcodes {
+                    if barcode_set.contains(&record.barcode) {
+                        let writer = writers.get_mut(barcodes_name).unwrap();
+                        writer
+                            .serialize(&record)
+                            .expect(&format!("Failed to write record number: {}", ii));
+                        stats
+                            .fragments_written
+                            .entry(barcodes_name.to_string())
+                            .and_modify(|e| *e += 1)
+                            .or_insert(1);
+                    }
+                }
             }
+            Err(_res) => continue,
         }
     }
 
