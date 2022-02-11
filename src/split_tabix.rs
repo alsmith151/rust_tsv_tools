@@ -58,7 +58,7 @@ pub fn split_tabix_by_barcode(
 ) -> Result<BarcodeStats, std::io::Error> {
     let mut reader = csv::ReaderBuilder::new()
         .delimiter(b'\t')
-        .has_headers(false)
+        .has_headers(true)
         .comment(Some(b'#'))
         .from_reader(
             niffler::from_path(&filename)
@@ -70,7 +70,7 @@ pub fn split_tabix_by_barcode(
         .keys()
         .map(|name| format!("{}.tsv.gz", name))
         .map(|filename| {
-            csv::Writer::from_writer(
+            csv::WriterBuilder::new().delimiter(b'\t').from_writer(
                 niffler::to_path(&filename, compression::Format::Gzip, niffler::Level::Five)
                     .expect("Error opening output"),
             )
