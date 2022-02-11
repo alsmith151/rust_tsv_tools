@@ -6,7 +6,7 @@ pub mod split_tabix;
 
 // Splits a tabix files into separate files using supplied barcodes
 #[pyfunction]
-#[pyo3(name = "subsample_bam")]
+#[pyo3(name = "split_tabix_by_barcode")]
 fn split_tabix_py(
     tabix: String,
     barcodes: HashMap<String, HashSet<String>>,
