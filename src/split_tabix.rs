@@ -1,8 +1,6 @@
 use csv::Writer;
 use flate2::{bufread, write, Compression};
 use niffler::{compression, Error};
-use rayon::iter::IntoParallelRefIterator;
-use rayon::iter::ParallelIterator;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -94,6 +92,7 @@ pub fn split_tabix_by_barcode(
 pub fn split_tabix_by_fragment_size(
     filename: &str,
     bins: &HashMap<String, Vec<u64>>,
+    output_prefix: &str,
 ) -> Result<FragmentStats, std::io::Error> {
     let mut reader = csv::ReaderBuilder::new()
         .delimiter(b'\t')
@@ -107,7 +106,7 @@ pub fn split_tabix_by_fragment_size(
 
     let mut writers: HashMap<String, Writer<Box<dyn std::io::Write>>> = bins
         .keys()
-        .map(|name| format!("{}.tsv.gz", name))
+        .map(|name| format!("{output_prefix}{name}.tsv.gz"))
         .map(|filename| {
             csv::WriterBuilder::new().delimiter(b'\t').from_writer(
                 niffler::to_path(&filename, compression::Format::Gzip, niffler::Level::Five)

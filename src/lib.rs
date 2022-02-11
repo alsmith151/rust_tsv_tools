@@ -25,17 +25,18 @@ fn split_tabix_by_barcode_py(
 
 // Splits a tabix files into separate files by fragment length
 #[pyfunction]
-#[pyo3(text_signature = "(tabix, bins, /)")]
+#[pyo3(text_signature = "(tabix, bins, output_prefix/)")]
 #[pyo3(name = "split_tabix_by_fragment_length")]
 fn split_tabix_by_fragment_length_py(
     tabix: String,
     bins: HashMap<String, Vec<u64>>,
+    output_prefix: String,
     _n_threads: Option<u8>,
 )  -> PyResult<()> 
 {   
 
     ctrlc::set_handler(|| std::process::exit(2)).unwrap_or_default();
-    let stats = split_tabix::split_tabix_by_fragment_size(&tabix, &bins).unwrap();
+    let stats = split_tabix::split_tabix_by_fragment_size(&tabix, &bins, &output_prefix).unwrap();
     println!("{:?}", stats);
 
     Ok(())
